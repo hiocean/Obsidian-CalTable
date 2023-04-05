@@ -1,86 +1,100 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { MarkdownView, Plugin } from 'obsidian';
+import { CalTableSettingTab } from './CalTableSettingTab';
+import { CalTablePluginSettings, DEFAULT_SETTINGS } from './settings';
 
-// Remember to rename these classes and interfaces!
 
-interface MyPluginSettings {
-	mySetting: string;
-}
-
-const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default'
-}
-
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
+export default class CalTable extends Plugin {
+	settings: CalTablePluginSettings;
 
 	async onload() {
 		await this.loadSettings();
 
-		// This creates an icon in the left ribbon.
-		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', (evt: MouseEvent) => {
-			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
-		});
-		// Perform additional things with the ribbon
-		ribbonIconEl.addClass('my-plugin-ribbon-class');
+		this.registerMarkdownCodeBlockProcessor(this.settings.codeKey, (source, el, ctx) => {
+			const lines = source.split("\n").filter(line => line.trim() !== "" && !/^[\/#;]/.test(line));  // 去除空行或者以*、/、#等字符开头的元素
+			const dots = ".".repeat(this.settings.repeat)
+			const unit: string = this.getVariables()?.currency || this.settings.suffix
 
-		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('Status Bar Text');
+			let accumulatedValues: number[][] = []; //保留各行的结果以备求和
 
-		// This adds a simple command that can be triggered anywhere
-		this.addCommand({
-			id: 'open-sample-modal-simple',
-			name: 'Open sample modal (simple)',
-			callback: () => {
-				new SampleModal(this.app).open();
-			}
-		});
-		// This adds an editor command that can perform some operation on the current editor instance
-		this.addCommand({
-			id: 'sample-editor-command',
-			name: 'Sample editor command',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				console.log(editor.getSelection());
-				editor.replaceSelection('Sample Editor Command');
-			}
-		});
-		// This adds a complex command that can check whether the current state of the app allows execution of the command
-		this.addCommand({
-			id: 'open-sample-modal-complex',
-			name: 'Open sample modal (complex)',
-			checkCallback: (checking: boolean) => {
-				// Conditions to check
-				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (markdownView) {
-					// If checking is true, we're simply "checking" if the command can be run.
-					// If checking is false, then we want to actually perform the operation.
-					if (!checking) {
-						new SampleModal(this.app).open();
+			const table = el.createEl("table");//创建表格
+			const body = table.createEl("tbody");
+
+			lines.forEach((inputText) => {
+				const calulatedValue = this.evalRow({ textOfLine: inputText, accumulatedValues: accumulatedValues })
+				const rowEL = body.createEl("tr"); //创建行
+				const cell_1 = rowEL.createEl("td").createEl("div", {
+					text: inputText + dots,
+					attr: { contentEditable: true }
+				});
+				cell_1.addEventListener("keydown", event => {
+					if (event.key === "Enter") { // 判断是否按下回车键
+						event.preventDefault(); // 阻止默认操作
+						const outputText = cell_1.innerText.replace(dots, '').trim(); // 获取文本内容，并去除前后空格
+						this.update(inputText, outputText);
 					}
-
-					// This command will only show up in Command Palette when the check function returns true
-					return true;
-				}
-			}
+				});
+				rowEL.createEl("td", { text: calulatedValue.toFixed(0), attr: { style: "text-align: right; vertical-align: bottom;" } });
+				rowEL.createEl("td", { text: unit, attr: { style: "text-align: right; vertical-align: bottom;" } });
+			})
 		});
 
-		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SampleSettingTab(this.app, this));
+		this.addSettingTab(new CalTableSettingTab(this.app, this));
+	}
+	private async update(findText: string, replaceText: string) {
+		const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
+		if (markdownView instanceof MarkdownView) {			// 使用 editor transaction 更新，性能更好
+			const editor = markdownView.editor;
+			const result = editor.getValue().replace(findText, replaceText)
+			editor.setValue(result);
+			await markdownView.save();
+		}
+	}
 
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
-		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			console.log('click', evt);
+	private evalRow({ textOfLine, accumulatedValues = [] }: { textOfLine: string; accumulatedValues?: number[][]; }) {
+		const regex = /\(([^()]*)\)[^(]*$/; //找到最后一个（）
+		const match = textOfLine.match(regex);
+		const length = accumulatedValues.length;
+		if (match) {
+			const valueForCurrRow = this.evalStringWithVars(match[1], this.getVariables())
+			const sum = length >= 1 ? accumulatedValues[length - 1][1] + valueForCurrRow : valueForCurrRow
+			accumulatedValues.push([valueForCurrRow, sum]);
+			return valueForCurrRow;
+		}
+		else if (textOfLine.match(/subtotal/i)) {
+			const sum = accumulatedValues[length - 1][1] || 0;
+			accumulatedValues.push([0, 0]);
+			return sum
+		}
+		else if (textOfLine.match(/total/i)) {
+			const sum = accumulatedValues.map(e => e[0]).reduce((pre, cur) => pre + cur, 0);
+			return sum
+		}
+		else { return 0; }
+	}
+
+	private evalStringWithVars(s: string, variables: { [x: string]: string; }) {
+		let input = s;
+		Object.keys(variables).forEach((key) => {
+			input = input.replace(key, variables[key] + this.settings.defaultOperator);
 		});
-
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
+		input = input.replace(/[;]/g, "+").split(" ") 		// 将字符串按空格拆分成数组元素
+			.filter(e => /[0-9+\-*/]/.test(e)) 				//仅保留有数字和运算符的
+			.map(e => e.replace(/[a-zA-Z]/g, "")) 			//去除字母
+			.join("").split(/([+\-*/])/) 					// 合并后再用运算符拆分
+			.filter((e, i, a) => !/[+\-*/]/.test(e) || /[0-9]/.test(a[i + 1])) //去除重复运算符
+			.join("").replace(/%/g, "*0.01"); //合并并替换%符号，这样就不用mathjs了
+		// console.log(arr);
+		return eval(input);
 	}
 
-	onunload() {
-
+	private getVariables() {
+		let variables = { ...this.settings.variables }; //使用扩展运算符
+		const tf = this.app.workspace.getActiveFile();
+		if (tf) { variables = { ...variables, ...this.app.metadataCache.getFileCache(tf)?.frontmatter }; }
+		return variables;
 	}
+
+
 
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
@@ -88,50 +102,5 @@ export default class MyPlugin extends Plugin {
 
 	async saveSettings() {
 		await this.saveData(this.settings);
-	}
-}
-
-class SampleModal extends Modal {
-	constructor(app: App) {
-		super(app);
-	}
-
-	onOpen() {
-		const {contentEl} = this;
-		contentEl.setText('Woah!');
-	}
-
-	onClose() {
-		const {contentEl} = this;
-		contentEl.empty();
-	}
-}
-
-class SampleSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
-
-	constructor(app: App, plugin: MyPlugin) {
-		super(app, plugin);
-		this.plugin = plugin;
-	}
-
-	display(): void {
-		const {containerEl} = this;
-
-		containerEl.empty();
-
-		containerEl.createEl('h2', {text: 'Settings for my awesome plugin.'});
-
-		new Setting(containerEl)
-			.setName('Setting #1')
-			.setDesc('It\'s a secret')
-			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
-				.onChange(async (value) => {
-					console.log('Secret: ' + value);
-					this.plugin.settings.mySetting = value;
-					await this.plugin.saveSettings();
-				}));
 	}
 }
