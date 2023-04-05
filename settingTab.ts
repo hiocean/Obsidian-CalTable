@@ -2,8 +2,8 @@
  * @Author: hiocean
  * @Date: 2023-04-05 20:55:03
  * @LastEditors: hiocean
- * @LastEditTime: 2023-04-05 21:15:09
- * @FilePath: \Obsidian-CalTable\CalTableSettingTab.ts
+ * @LastEditTime: 2023-04-05 21:18:00
+ * @FilePath: \Obsidian-CalTable\settingTab.ts
  * @Description: 
  * 
  * Copyright (c) 2023 by hiocean, All Rights Reserved. 
