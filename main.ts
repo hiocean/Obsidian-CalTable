@@ -1,5 +1,5 @@
 import { MarkdownView, Plugin } from 'obsidian';
-import { CalTableSettingTab } from './CalTableSettingTab';
+import { CalTableSettingTab } from './settingTab';
 import { CalTablePluginSettings, DEFAULT_SETTINGS } from './settings';
 
 
