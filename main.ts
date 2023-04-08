@@ -22,19 +22,26 @@ export default class CalTable extends Plugin {
 			lines.forEach((inputText) => {
 				const calulatedValue = this.evalRow({ textOfLine: inputText, accumulatedValues: accumulatedValues })
 				const rowEL = body.createEl("tr"); //创建行
-				const cell_1 = rowEL.createEl("td").createEl("div", {
+				const cell_1 = rowEL.createEl("td")
+				const c1Input = cell_1.createEl("div", {
 					text: inputText + dots,
 					attr: { contentEditable: true }
 				});
-				cell_1.addEventListener("keydown", event => {
+				c1Input.addEventListener("keydown", event => {
 					if (event.key === "Enter") { // 判断是否按下回车键
 						event.preventDefault(); // 阻止默认操作
-						const outputText = cell_1.innerText.replace(dots, '').trim(); // 获取文本内容，并去除前后空格
+						const outputText = c1Input.innerText.replace(dots, '').trim(); // 获取文本内容，并去除前后空格
 						this.update(inputText, outputText);
 					}
 				});
-				rowEL.createEl("td", { text: calulatedValue.toFixed(0), attr: { style: "text-align: right; vertical-align: bottom;" } });
-				rowEL.createEl("td", { text: unit, attr: { style: "text-align: right; vertical-align: bottom;" } });
+
+				const c2 = rowEL.createEl("td", { text: calulatedValue.toFixed(0), attr: { style: "text-align: right; vertical-align: bottom;" } });
+				const c3 = rowEL.createEl("td", { text: unit, attr: { style: "text-align: right; vertical-align: bottom;" } });
+				if (inputText.match(/total/gi)) {
+					cell_1.style.borderBottom = "1px solid #f00";
+					c2.style.borderBottom = "1px solid #f00";
+					c3.style.borderBottom = "1px solid #f00";
+				}
 			})
 		});
 
@@ -79,10 +86,10 @@ export default class CalTable extends Plugin {
 		});
 		input = input.replace(/[;]/g, "+").split(" ") 		// 将字符串按空格拆分成数组元素
 			.filter(e => /[0-9+\-*/]/.test(e)) 				//仅保留有数字和运算符的
-			.map(e => e.replace(/[a-zA-Z]/g, "")) 			//去除字母
+			.map(e => e.replace(/[^0-9\.+\-*/%]/g, "")) 			//去除字母
 			.join("").split(/([+\-*/])/) 					// 合并后再用运算符拆分
 			.filter((e, i, a) => !/[+\-*/]/.test(e) || /[0-9]/.test(a[i + 1])) //去除重复运算符
-			.join("").replace(/%/g, "*0.01"); //合并并替换%符号，这样就不用mathjs了
+			.join("").replace(/%/g, "* 0.01"); //合并并替换%符号，这样就不用mathjs了
 		// console.log(arr);
 		return eval(input);
 	}
