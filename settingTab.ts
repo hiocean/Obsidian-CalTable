@@ -2,7 +2,7 @@
  * @Author: hiocean
  * @Date: 2023-04-05 20:55:03
  * @LastEditors: hiocean
- * @LastEditTime: 2023-04-08 09:48:00
+ * @LastEditTime: 2023-04-08 22:48:25
  * @FilePath: \Obsidian-CalTable\settingTab.ts
  * @Description: 
  * 
@@ -34,6 +34,17 @@ export class CalTableSettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					console.log('suffix: ' + value);
 					this.plugin.settings.suffix = value;
+					await this.plugin.saveSettings();
+				}));
+		new Setting(containerEl)
+			.setName('特殊单元格的格式')
+			.setDesc('special cell css')
+			.addTextArea(text => text
+				.setPlaceholder('Enter the css')
+				.setValue(this.plugin.settings.specialCellCss)
+				.onChange(async (value) => {
+					console.log('css: ' + value);
+					this.plugin.settings.specialCellCss = value;
 					await this.plugin.saveSettings();
 				}));
 		// new Setting(containerEl)
@@ -92,7 +103,7 @@ export class CalTableSettingTab extends PluginSettingTab {
 					});
 			});
 
-		
+
 		Object.keys(this.plugin.settings.variables).forEach(key => {
 			let showStr = `${key}\t:\t${this.plugin.settings.variables[key]}`;
 			new Setting(containerEl)

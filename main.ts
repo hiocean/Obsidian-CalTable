@@ -22,8 +22,8 @@ export default class CalTable extends Plugin {
 			lines.forEach((inputText) => {
 				const calulatedValue = this.evalRow({ textOfLine: inputText, accumulatedValues: accumulatedValues })
 				const rowEL = body.createEl("tr"); //创建行
-				const cell_1 = rowEL.createEl("td")
-				const c1Input = cell_1.createEl("div", {
+				const c1 = rowEL.createEl("td")
+				const c1Input = c1.createEl("div", {
 					text: inputText + dots,
 					attr: { contentEditable: true }
 				});
@@ -37,10 +37,10 @@ export default class CalTable extends Plugin {
 
 				const c2 = rowEL.createEl("td", { text: calulatedValue.toFixed(0), attr: { style: "text-align: right; vertical-align: bottom;" } });
 				const c3 = rowEL.createEl("td", { text: unit, attr: { style: "text-align: right; vertical-align: bottom;" } });
-				if (inputText.match(/total/gi)) {
-					cell_1.style.borderBottom = "1px solid #f00";
-					c2.style.borderBottom = "1px solid #f00";
-					c3.style.borderBottom = "1px solid #f00";
+				if (inputText.match(new RegExp(this.settings.specialCellKeyword, "gi"))) {
+					c1.style.cssText += ";"+ this.settings.specialCellCss+";";
+					c2.style.cssText += ";"+ this.settings.specialCellCss+";";
+					c3.style.cssText += ";"+ this.settings.specialCellCss+";";
 				}
 			})
 		});
