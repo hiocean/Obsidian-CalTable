@@ -2,14 +2,15 @@
  * @Author: hiocean
  * @Date: 2023-03-30 23:49:14
  * @LastEditors: hiocean
- * @LastEditTime: 2023-04-05 19:14:13
+ * @LastEditTime: 2023-04-08 09:31:15
  * @FilePath: \Obsidian-CalTable\settings.ts
  * @Description: 
  * 
  * Copyright (c) 2023 by hiocean, All Rights Reserved. 
  */
 export interface CalTablePluginSettings {
-	variables: {};
+	userAddVarsOpen: boolean;
+	variables: {[key: string]: any};
 	suffix: string;
 	codeKey: string;
 	defaultOperator: string
@@ -20,5 +21,6 @@ export const DEFAULT_SETTINGS: CalTablePluginSettings = {
 	suffix: "USD",
 	codeKey: 'cal',
 	defaultOperator: "*",
-	repeat: 10
+	repeat: 10,
+	userAddVarsOpen:true
 };
