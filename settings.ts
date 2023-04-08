@@ -2,14 +2,14 @@
  * @Author: hiocean
  * @Date: 2023-03-30 23:49:14
  * @LastEditors: hiocean
- * @LastEditTime: 2023-04-08 22:51:54
+ * @LastEditTime: 2023-04-08 22:53:48
  * @FilePath: \Obsidian-CalTable\settings.ts
  * @Description: 
  * 
  * Copyright (c) 2023 by hiocean, All Rights Reserved. 
  */
 export interface CalTablePluginSettings {
-	specialCellKeyword: string | RegExp;
+	specialCellKeyword: string ;
 	specialCellCss: string;
 	userAddVarsOpen: boolean;
 	variables: {[key: string]: any};

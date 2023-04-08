@@ -37,6 +37,17 @@ export class CalTableSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 		new Setting(containerEl)
+			.setName('特殊单元格的关键词')
+			.setDesc('special cell keyword')
+			.addText(text => text
+				.setPlaceholder('Enter the keyword')
+				.setValue(this.plugin.settings.specialCellKeyword)
+				.onChange(async (value) => {
+					console.log('css: ' + value);
+					this.plugin.settings.specialCellKeyword = value;
+					await this.plugin.saveSettings();
+				}));
+		new Setting(containerEl)
 			.setName('特殊单元格的格式')
 			.setDesc('special cell css')
 			.addTextArea(text => text
