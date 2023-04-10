@@ -2,7 +2,7 @@
  * @Author: hiocean
  * @Date: 2023-04-05 20:55:03
  * @LastEditors: hiocean
- * @LastEditTime: 2023-04-08 22:48:25
+ * @LastEditTime: 2023-04-10 19:24:10
  * @FilePath: \Obsidian-CalTable\settingTab.ts
  * @Description: 
  * 
@@ -25,6 +25,17 @@ export class CalTableSettingTab extends PluginSettingTab {
 
 		containerEl.createEl('h2', { text: 'Settings for my awesome plugin.' });
 
+		new Setting(containerEl)
+			.setName('默认codeblock关键词')
+			.setDesc('default block keyword')
+			.addText(text => text
+				.setPlaceholder('Enter the key')
+				.setValue(this.plugin.settings.codeKey)
+				.onChange(async (value) => {
+					console.log('codeKey: ' + value);
+					this.plugin.settings.codeKey = value;
+					await this.plugin.saveSettings();
+				}));
 		new Setting(containerEl)
 			.setName('默认后缀名')
 			.setDesc('default suffix')
@@ -53,6 +64,7 @@ export class CalTableSettingTab extends PluginSettingTab {
 			.addTextArea(text => text
 				.setPlaceholder('Enter the css')
 				.setValue(this.plugin.settings.specialCellCss)
+				// .setWidth('100%') style="width: 373px; height: 44px;"
 				.onChange(async (value) => {
 					console.log('css: ' + value);
 					this.plugin.settings.specialCellCss = value;

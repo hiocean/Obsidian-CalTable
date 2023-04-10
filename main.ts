@@ -1,4 +1,4 @@
-import { MarkdownView, Plugin } from 'obsidian';
+import { MarkdownView, Notice, Plugin } from 'obsidian';
 import { CalTableSettingTab } from './settingTab';
 import { CalTablePluginSettings, DEFAULT_SETTINGS } from './settings';
 
@@ -13,43 +13,53 @@ export default class CalTable extends Plugin {
 			const lines = source.split("\n").filter(line => line.trim() !== "" && !/^[\/#;]/.test(line));  // 去除空行或者以*、/、#等字符开头的元素
 			const dots = ".".repeat(this.settings.repeat)
 			const unit: string = this.getVariables()?.currency || this.settings.suffix
-
-			let accumulatedValues: number[][] = []; //保留各行的结果以备求和
-
-			const table = el.createEl("table");//创建表格
-			const body = table.createEl("tbody");
-
-			lines.forEach((inputText) => {
-				const calulatedValue = this.evalRow({ textOfLine: inputText, accumulatedValues: accumulatedValues })
-				const rowEL = body.createEl("tr"); //创建行
-				const c1 = rowEL.createEl("td")
-				const c1Input = c1.createEl("div", {
-					text: inputText + dots,
-					attr: { contentEditable: true }
-				});
-				c1Input.addEventListener("keydown", event => {
-					if (event.key === "Enter") { // 判断是否按下回车键
-						event.preventDefault(); // 阻止默认操作
-						const outputText = c1Input.innerText.replace(dots, '').trim(); // 获取文本内容，并去除前后空格
-						this.update(inputText, outputText);
-					}
-				});
-
-				const c2 = rowEL.createEl("td", { text: calulatedValue.toFixed(0), attr: { style: "text-align: right; vertical-align: bottom;" } });
-				const c3 = rowEL.createEl("td", { text: unit, attr: { style: "text-align: right; vertical-align: bottom;" } });
-				if (inputText.match(new RegExp(this.settings.specialCellKeyword, "gi"))) {
-					c1.style.cssText += ";" + this.settings.specialCellCss + ";";
-					c2.style.cssText += ";" + this.settings.specialCellCss + ";";
-					c3.style.cssText += ";" + this.settings.specialCellCss + ";";
-				}
-			})
-
-
+			this.generateTable(el, lines, dots, unit);
 			this.addCopyButton(el);
 		});
+
+		// this.app.metadataCache.on("changed", async (file) => {
+		// 	if (this.app.workspace.getActiveFile()?.path === file.path) {
+		// 		new Notice("changed")
+		// 		await this.update(".", ".");				
+		// 		new Notice("changed2")
+		// 	}
+		// });
 		this.addSettingTab(new CalTableSettingTab(this.app, this));
+
 	}
-	
+
+	private generateTable(el: HTMLElement, lines: string[], dots: string, unit: string) {
+		let accumulatedValues: number[][] = []; //保留各行的结果以备求和
+
+		const table = el.createEl("table"); //创建表格
+		const body = table.createEl("tbody");
+
+		lines.forEach((inputText) => {
+			const calulatedValue = this.evalRow({ textOfLine: inputText, accumulatedValues: accumulatedValues });
+			const rowEL = body.createEl("tr"); //创建行
+			const c1 = rowEL.createEl("td");
+			const c1Input = c1.createEl("div", {
+				text: inputText + dots,
+				attr: { contentEditable: true }
+			});
+			c1Input.addEventListener("keydown", event => {
+				if (event.key === "Enter") { // 判断是否按下回车键
+					event.preventDefault(); // 阻止默认操作
+					const outputText = c1Input.innerText.replace(dots, '').trim(); // 获取文本内容，并去除前后空格
+					this.update(inputText, outputText);
+				}
+			});
+
+			const c2 = rowEL.createEl("td", { text: calulatedValue.toFixed(0), attr: { style: "text-align: right; vertical-align: bottom;" } });
+			const c3 = rowEL.createEl("td", { text: unit, attr: { style: "text-align: right; vertical-align: bottom;" } });
+			if (inputText.match(new RegExp(this.settings.specialCellKeyword, "gi"))) {
+				c1.style.cssText += ";" + this.settings.specialCellCss + ";";
+				c2.style.cssText += ";" + this.settings.specialCellCss + ";";
+				c3.style.cssText += ";" + this.settings.specialCellCss + ";";
+			}
+		});
+	}
+
 	private addCopyButton(el: HTMLElement) {
 		const button = el.createEl("button", { text: "Copy Table" });
 		button.addEventListener("click", () => {
@@ -68,9 +78,11 @@ export default class CalTable extends Plugin {
 		const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
 		if (markdownView instanceof MarkdownView) {			// 使用 editor transaction 更新，性能更好
 			const editor = markdownView.editor;
+			const cursor = editor.getCursor();
 			const result = editor.getValue().replace(findText, replaceText)
 			editor.setValue(result);
 			await markdownView.save();
+			editor.setCursor(cursor);
 		}
 	}
 
