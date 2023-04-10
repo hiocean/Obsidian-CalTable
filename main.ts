@@ -38,15 +38,32 @@ export default class CalTable extends Plugin {
 				const c2 = rowEL.createEl("td", { text: calulatedValue.toFixed(0), attr: { style: "text-align: right; vertical-align: bottom;" } });
 				const c3 = rowEL.createEl("td", { text: unit, attr: { style: "text-align: right; vertical-align: bottom;" } });
 				if (inputText.match(new RegExp(this.settings.specialCellKeyword, "gi"))) {
-					c1.style.cssText += ";"+ this.settings.specialCellCss+";";
-					c2.style.cssText += ";"+ this.settings.specialCellCss+";";
-					c3.style.cssText += ";"+ this.settings.specialCellCss+";";
+					c1.style.cssText += ";" + this.settings.specialCellCss + ";";
+					c2.style.cssText += ";" + this.settings.specialCellCss + ";";
+					c3.style.cssText += ";" + this.settings.specialCellCss + ";";
 				}
 			})
-		});
 
+
+			this.addCopyButton(el);
+		});
 		this.addSettingTab(new CalTableSettingTab(this.app, this));
 	}
+	
+	private addCopyButton(el: HTMLElement) {
+		const button = el.createEl("button", { text: "Copy Table" });
+		button.addEventListener("click", () => {
+			const table = el.querySelector("table");
+			const range = document.createRange();
+			range.selectNode(table);
+			window.getSelection()?.removeAllRanges();
+			window.getSelection()?.addRange(range);
+			document.execCommand("copy");
+			window.getSelection()?.removeAllRanges();
+			button.innerText = "Table Copied!";
+		});
+	}
+
 	private async update(findText: string, replaceText: string) {
 		const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
 		if (markdownView instanceof MarkdownView) {			// 使用 editor transaction 更新，性能更好
