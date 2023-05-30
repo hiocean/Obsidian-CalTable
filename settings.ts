@@ -16,14 +16,14 @@ export interface CalTablePluginSettings {
 	suffix: string;
 	codeKey: string;
 	defaultOperator: string
-	repeat: number;
+	repeatTimes: number;
 }
 export const DEFAULT_SETTINGS: CalTablePluginSettings = {
 	variables: { "XX": 10000 },
 	suffix: "USD",
 	codeKey: 'cal',
 	defaultOperator: "*",
-	repeat: 10,
+	repeatTimes: 10,
 	userAddVarsOpen: true,
 	specialCellCss: "border-bottom:1px solid #f00",
 	specialCellKeyword: "total"
